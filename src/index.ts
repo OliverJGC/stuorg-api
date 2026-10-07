@@ -1,24 +1,10 @@
-import express, { Request, Response } from 'express';
+import { getRuntimeConfig } from "./config/runtimeConfig.js";
+import { createApp } from "./createApp.js";
+import { createDependencies } from "./services/createDependencies.js";
 
-const app = express();
-const PORT = process.env.PORT || 5001;
+export const config = getRuntimeConfig();
+export const dependencies = createDependencies(config);
 
-app.use(express.json());
+const app = createApp(config);
 
-app.get('/', (req: Request, res: Response) => {
-  res.send({ message: 'Hello from Express with TypeScript!' });
-});
-
-app.get('/health', (req, res) => {
-  const healthData = {
-    status: 'OK',
-    uptime: process.uptime(),
-    timestamp: Date.now()
-  };
-  
-  res.status(200).json(healthData);
-});
-
-app.listen(PORT, () => {
-  console.log(`⚡️[server]: Server is running at http://localhost:${PORT}`);
-});
+export default app;
