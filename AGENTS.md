@@ -9,3 +9,7 @@
 4. Use strict TypeScript, avoid any, and prefer type for application type definitions.
 
 5. Keep code self-documenting.
+
+6. Keep code human-readable, not machine-readable.
+
+7. Write straightforward code that is easy to follow, with clear variable names and well-defined function signatures.
