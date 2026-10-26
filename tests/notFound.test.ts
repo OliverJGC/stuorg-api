@@ -1,13 +1,10 @@
 import request from "supertest";
 
+import { createAppConfig } from "../mocks/createAppConfig.js";
 import { createApp } from "../src/createApp.js";
 import { API_MESSAGE } from "../src/utils/constants.js";
 
-const app = createApp({
-  corsOrigins: ["http://localhost:3000"],
-  environment: "test",
-  port: 5001,
-});
+const app = createApp(createAppConfig);
 
 describe("GET /missing-route", () => {
   it("returns HTTP 404 without starting a server", async () => {
