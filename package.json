@@ -2,12 +2,12 @@
   "name": "stuorg-api",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/localServer.js",
+  "main": "dist/server.js",
   "scripts": {
-    "dev": "node --env-file-if-exists=.env --import tsx --watch src/localServer.ts",
-    "build": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\" && prisma generate && tsc",
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/server.ts",
+    "build": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\" && prisma generate --schema src/infrastructure/prisma/schema.prisma && tsc",
     "typecheck": "tsc --noEmit",
-    "start": "node --env-file-if-exists=.env dist/localServer.js",
+    "start": "node --env-file-if-exists=.env dist/server.js",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"

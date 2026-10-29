@@ -2,10 +2,14 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 
-import type { RuntimeConfig } from "./config/runtimeConfig.js";
 import { notFoundMiddleware } from "./middleware/notFoundMiddleware.js";
+import { requestErrorMiddleware } from "./middleware/requestErrorMiddleware.js";
+import { organizationRouter } from "./modules/organizations/organizationRoutes.js";
+import type { RuntimeConfig } from "./types/config.js";
 
-export function createApp(config: RuntimeConfig): express.Express {
+export function createApp(
+  config: RuntimeConfig,
+): express.Express {
   const app = express();
 
   app.disable("x-powered-by");
@@ -24,6 +28,8 @@ export function createApp(config: RuntimeConfig): express.Express {
     },
   }));
   app.use(express.json({ inflate: false, limit: "100kb" }));
+  app.use("/internal/organizations", organizationRouter);
+  app.use(requestErrorMiddleware);
   app.use(notFoundMiddleware);
 
   return app;

@@ -1,13 +1,7 @@
 import { z } from "zod";
+import type { RuntimeConfig } from "../types/config.js";
 
 const DEFAULT_DEVELOPMENT_ORIGIN = "http://localhost:3000";
-
-export type RuntimeConfig = {
-  corsOrigins: string[];
-  databaseUrl?: string;
-  environment: "development" | "production" | "test";
-  port: number;
-};
 
 const originSchema = z.string().refine((value) => {
   try {
@@ -39,17 +33,26 @@ const environmentSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.string().regex(/^\d+$/).default("5001").transform(Number)
     .pipe(z.number().int().min(1).max(65_535)),
-  DATABASE_URL: databaseUrlSchema.optional(),
+  DATABASE_URL: databaseUrlSchema,
+  SUPABASE_SERVICE_ROLE_KEY: z.string().trim().min(1),
+  SUPABASE_URL: z.string().url(),
   CORS_ORIGINS: z.string()
     .transform((value) => value.split(",").map((origin) => origin.trim()))
     .pipe(z.array(originSchema).min(1))
-    .optional(),
 }).superRefine((value, context) => {
   if (value.NODE_ENV !== "development" && !value.CORS_ORIGINS) {
     context.addIssue({
       code: "custom",
       message: "Required outside development",
       path: ["CORS_ORIGINS"],
+    });
+  }
+
+  if (Boolean(value.SUPABASE_URL) !== Boolean(value.SUPABASE_SERVICE_ROLE_KEY)) {
+    context.addIssue({
+      code: "custom",
+      message: "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured together",
+      path: ["SUPABASE_URL"],
     });
   }
 });
@@ -65,8 +68,10 @@ export function getRuntimeConfig(environment: NodeJS.ProcessEnv = process.env): 
   const value = result.data;
   return {
     corsOrigins: [...new Set(value.CORS_ORIGINS ?? [DEFAULT_DEVELOPMENT_ORIGIN])],
-    ...(value.DATABASE_URL ? { databaseUrl: value.DATABASE_URL } : {}),
+    databaseUrl: value.DATABASE_URL,
     environment: value.NODE_ENV,
     port: value.PORT,
+    supabaseServiceRoleKey: value.SUPABASE_SERVICE_ROLE_KEY,
+    supabaseUrl: value.SUPABASE_URL
   };
 }
