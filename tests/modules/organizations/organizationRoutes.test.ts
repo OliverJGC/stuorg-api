@@ -70,6 +70,13 @@ describe("organization routes", () => {
     expect(organizationService.validateOrganizationName).toHaveBeenCalledWith("Engineering Club");
   });
 
+  it("returns a message when the organization name is taken", async () => {
+    organizationService.validateOrganizationName.mockResolvedValue({ name: "Engineering Club", available: false });
+    const response = await request(createApp(createAppConfig))
+      .post("/internal/organizations/name-availability").send({ name: "Engineering Club" });
+    expect(response.body).toEqual({ name: "Engineering Club", available: false, message: API_MESSAGE.ORGANIZATION_NAME_TAKEN });
+  });
+
   it("rejects an invalid organization name without invoking the service", async () => {
     const app = createApp(createAppConfig);
     const response = await request(app)
