@@ -1,17 +1,19 @@
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import type { Logger } from "pino";
 
+import { createLogger } from "./infrastructure/logging/logger.js";
+import { createHttpLoggingMiddleware } from "./middleware/httpLoggingMiddleware.js";
 import { notFoundMiddleware } from "./middleware/notFoundMiddleware.js";
+import { unexpectedErrorMiddleware } from "./middleware/unexpectedErrorMiddleware.js";
 import { requestErrorMiddleware } from "./middleware/requestErrorMiddleware.js";
 import { organizationRouter } from "./modules/organizations/organizationRoutes.js";
 import type { RuntimeConfig } from "./types/config.js";
 
-export function createApp(
-  config: RuntimeConfig,
-): express.Express {
+export function createApp(config: RuntimeConfig, logger: Logger = createLogger(config)): express.Express {
   const app = express();
-
+  app.use(...createHttpLoggingMiddleware(logger));
   app.disable("x-powered-by");
   app.set("trust proxy", false);
   app.use(helmet());
@@ -28,9 +30,12 @@ export function createApp(
     },
   }));
   app.use(express.json({ inflate: false, limit: "100kb" }));
-  app.use("/internal/organizations", organizationRouter);
+  app.use("/internal/organizations", (_request, response, next) => {
+    response.locals.logRoutePrefix = "/internal/organizations";
+    next();
+  }, organizationRouter);
   app.use(requestErrorMiddleware);
   app.use(notFoundMiddleware);
-
+  app.use(unexpectedErrorMiddleware);
   return app;
 }

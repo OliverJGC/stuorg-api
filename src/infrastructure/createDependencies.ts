@@ -4,6 +4,7 @@ import { getRuntimeConfig } from "../config/runtimeConfig.js";
 import { createOrganizationService } from "../modules/organizations/organizationService.js";
 import type { ApplicationDependencies, RuntimeConfig } from "../types/config.js";
 import { createSupabaseAuthClient } from "./auth/supabaseAuthClient.js";
+import { getLogger } from "./logging/logger.js";
 
 const DATABASE_POOL_DEFAULTS = {
   connect_timeout: "3",
@@ -25,13 +26,14 @@ function addDatabasePoolDefaults(databaseUrl: string): string {
 }
 
 export function createDependencies(config: RuntimeConfig): ApplicationDependencies {
-  console.log("[createDependencies] called");
   const datasourceUrl = addDatabasePoolDefaults(config.databaseUrl);
   const auth = createSupabaseAuthClient(config.supabaseUrl, config.supabaseServiceRoleKey);
   const database = new PrismaClient({ datasourceUrl });
 
-  console.log("[createDependencies] initialized organization service");
-  return { organizationService: createOrganizationService(database, auth) };
+  getLogger().debug("Initialized application services");
+  return {
+    organizationService: createOrganizationService(database, auth)
+  };
 }
 
 export const { organizationService } = createDependencies(getRuntimeConfig());

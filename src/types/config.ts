@@ -4,6 +4,7 @@ export type RuntimeConfig = {
   corsOrigins: string[];
   databaseUrl: string;
   environment: "development" | "production" | "test";
+  logLevel: "trace" | "debug" | "info" | "warn" | "error" | "fatal" | "silent";
   port: number;
   supabaseServiceRoleKey: string;
   supabaseUrl: string;

@@ -29,6 +29,24 @@ const databaseUrlSchema = z.string().refine((value) => {
   }
 }, "Must be a PostgreSQL connection URL");
 
+const loggingSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"]).optional(),
+});
+
+export function getLoggingConfig(environment: NodeJS.ProcessEnv = process.env) {
+  const result = loggingSchema.safeParse(environment);
+
+  if (!result.success) {
+    throw new Error("Invalid logging configuration: NODE_ENV or LOG_LEVEL");
+  }
+
+  const { NODE_ENV, LOG_LEVEL } = result.data;
+  const defaultLevel = NODE_ENV === "development" ? "debug" : NODE_ENV === "test" ? "silent" : "info";
+
+  return { environment: NODE_ENV, logLevel: LOG_LEVEL ?? defaultLevel };
+}
+
 const environmentSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.string().regex(/^\d+$/).default("5001").transform(Number)
@@ -58,6 +76,7 @@ const environmentSchema = z.object({
 });
 
 export function getRuntimeConfig(environment: NodeJS.ProcessEnv = process.env): RuntimeConfig {
+  const logging = getLoggingConfig(environment);
   const result = environmentSchema.safeParse(environment);
 
   if (!result.success) {
@@ -70,6 +89,7 @@ export function getRuntimeConfig(environment: NodeJS.ProcessEnv = process.env): 
     corsOrigins: [...new Set(value.CORS_ORIGINS ?? [DEFAULT_DEVELOPMENT_ORIGIN])],
     databaseUrl: value.DATABASE_URL,
     environment: value.NODE_ENV,
+    logLevel: logging.logLevel,
     port: value.PORT,
     supabaseServiceRoleKey: value.SUPABASE_SERVICE_ROLE_KEY,
     supabaseUrl: value.SUPABASE_URL

@@ -1,4 +1,6 @@
 export const API_MESSAGE = {
+  UNAUTHORIZED: "Your session is invalid or has expired.",
+  FORBIDDEN: "You do not have access to this resource.",
   P2000: "Value exceeds the allowed length.",
   P2001: "Record not found.",
   P2002: "Record already exists.",
@@ -12,6 +14,8 @@ export const API_MESSAGE = {
   P2034: "Database transaction conflict.",
   P2037: "Database temporarily unavailable.",
   DATABASE_OPERATION_FAILED: "Database operation failed.",
+  REQUEST_FAILED: "The request could not be completed.",
+  TOO_MANY_REQUESTS: "Too many requests. Please try again later.",
   BAD_REQUEST: "The request is invalid.",
   CONFLICT: "A conflicting record already exists.",
   INTERNAL_SERVER_ERROR: "An unexpected error occurred.",
@@ -24,3 +28,17 @@ export const API_MESSAGE = {
   UNPROCESSABLE_ENTITY: "The request cannot be processed.",
   UNSUPPORTED_ENCODING: "The request encoding is not supported.",
 } as const;
+
+export const HTTP_STATUS_MESSAGES: Record<number, string> = {
+  400: API_MESSAGE.BAD_REQUEST,
+  401: API_MESSAGE.UNAUTHORIZED,
+  403: API_MESSAGE.FORBIDDEN,
+  404: API_MESSAGE.NOT_FOUND,
+  409: API_MESSAGE.CONFLICT,
+  413: API_MESSAGE.PAYLOAD_TOO_LARGE,
+  415: API_MESSAGE.UNSUPPORTED_ENCODING,
+  422: API_MESSAGE.UNPROCESSABLE_ENTITY,
+  429: API_MESSAGE.TOO_MANY_REQUESTS,
+  500: API_MESSAGE.INTERNAL_SERVER_ERROR,
+  503: API_MESSAGE.SERVICE_UNAVAILABLE,
+};

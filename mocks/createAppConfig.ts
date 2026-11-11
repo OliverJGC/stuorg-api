@@ -3,6 +3,7 @@ import type { RuntimeConfig } from "../src/types/config.js";
 export const createAppConfig: RuntimeConfig = {
   corsOrigins: ["http://localhost:3000"],
   environment: "test",
+  logLevel: "silent",
   port: 5001,
   databaseUrl: "postgresql://test:test@localhost:5432/test",
   supabaseUrl: "https://project.supabase.co",

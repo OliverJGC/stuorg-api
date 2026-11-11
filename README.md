@@ -28,3 +28,17 @@ Copy `.env.example` to `.env` for local development. Do not commit `.env` or put
 Set the Vercel project root to `stuorg-api` and use Node 22. Set the install command to `npm ci` and the build command to `npm run build`.
 
 Configure `NODE_ENV`, `CORS_ORIGINS`, and optional `DATABASE_URL` separately for Preview and Production. Use separate database credentials for preview deployments. Configure firewall and rate limiting in Vercel before public release.
+
+## Logging
+
+Pino writes readable logs in development (`debug`), JSON to stdout in production (`info`), and stays silent in tests. `runtimeConfig.ts` validates an optional `LOG_LEVEL`: `trace`, `debug`, `info`, `warn`, `error`, `fatal`, or `silent`. Production does not require `pino-pretty`.
+
+Each request receives a server-generated UUID in `X-Request-ID`. Incoming IDs are ignored. `AsyncLocalStorage` carries that ID through controllers, services, and dependencies. HTTP middleware logs one outcome with method, route pattern, status, and duration; unmatched routes use `<unmatched>`. Successes use `info`, 4xx use `warn`, and 5xx use `error`.
+
+Use `getLogger()` from `src/infrastructure/logging/logger.ts` at the point of logging. Outside requests it returns the base logger. Keep messages controlled and fields limited to operation names, recognized provider codes, and statuses:
+
+```ts
+getLogger().error({ dependency: "prisma", code: "P2002", status: 409 }, "Database operation failed");
+```
+
+Log dependency diagnostics once and service decisions separately. Let HTTP middleware own request summaries. Never log raw errors, messages, stacks, causes, request/response payloads, credentials, or arbitrary URLs. Pino redaction protects configured fields; it cannot scrub secrets embedded in strings. Logs remain local/stdout; no external collector or file output is configured.
