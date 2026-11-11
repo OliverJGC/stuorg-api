@@ -16,18 +16,44 @@ export function createLogger(config: LoggingConfig, destination?: DestinationStr
     },
     redact: {
       paths: [
-        "password", "token", "accessToken", "refreshToken", "access_token", "refresh_token",
-        "authorization", "cookie", "apikey", "serviceRoleKey", "supabaseServiceRoleKey", "databaseUrl",
-        "*.password", "*.token", "*.accessToken", "*.refreshToken", "*.access_token", "*.refresh_token",
-        "*.authorization", "*.cookie", "*.apikey", "*.serviceRoleKey", "*.supabaseServiceRoleKey", "*.databaseUrl",
-        "req.headers", "req.body", "req.query", "res.headers",
+        "password",
+        "token",
+        "accessToken",
+        "refreshToken",
+        "access_token",
+        "refresh_token",
+        "authorization",
+        "cookie",
+        "apikey",
+        "serviceRoleKey",
+        "supabaseServiceRoleKey",
+        "databaseUrl",
+        "*.password",
+        "*.token",
+        "*.accessToken",
+        "*.refreshToken",
+        "*.access_token",
+        "*.refresh_token",
+        "*.authorization",
+        "*.cookie",
+        "*.apikey",
+        "*.serviceRoleKey",
+        "*.supabaseServiceRoleKey",
+        "*.databaseUrl",
+        "req.headers",
+        "req.body",
+        "req.query",
+        "res.headers",
       ],
       remove: true,
     },
   };
 
   if (config.environment === "development" && !destination) {
-    options.transport = { target: "pino-pretty", options: { colorize: true, translateTime: "SYS:standard" } };
+    options.transport = {
+      target: "pino-pretty",
+      options: { colorize: true, translateTime: "SYS:standard" },
+    };
   }
 
   return destination ? pino(options, destination) : pino(options);

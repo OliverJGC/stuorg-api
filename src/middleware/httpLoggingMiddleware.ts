@@ -27,14 +27,23 @@ export function createHttpLoggingMiddleware(logger: Logger): RequestHandler[] {
 
       return {
         method: request.method,
-        route: typeof route === "string" ? `${typeof prefix === "string" ? prefix : ""}${route}` : "<unmatched>",
+        route:
+          typeof route === "string"
+            ? `${typeof prefix === "string" ? prefix : ""}${route}`
+            : "<unmatched>",
         status: response.statusCode,
       };
     },
     customLogLevel(request, response, error) {
-      if (response.statusCode >= 500 || error) return "error";
-      if (response.statusCode >= 400) return "warn";
-      if (request.method === "OPTIONS" && response.statusCode >= 200 && response.statusCode < 300) return "silent";
+      if (response.statusCode >= 500 || error) {
+        return "error";
+      }
+      if (response.statusCode >= 400) {
+        return "warn";
+      }
+      if (request.method === "OPTIONS" && response.statusCode >= 200 && response.statusCode < 300) {
+        return "silent";
+      }
       return "info";
     },
     customSuccessMessage: () => "Request completed",

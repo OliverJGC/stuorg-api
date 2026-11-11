@@ -14,10 +14,22 @@ type SupabaseError = {
 };
 
 const SUPABASE_ERROR_CODES = new Set([
-  "invalid_credentials", "refresh_token_not_found", "refresh_token_already_used", "session_not_found",
-  "session_expired", "bad_jwt", "no_authorization", "user_not_found", "email_exists", "user_already_exists",
-  "email_not_confirmed", "weak_password", "validation_failed", "over_request_rate_limit",
-  "over_email_send_rate_limit", "unexpected_failure",
+  "invalid_credentials",
+  "refresh_token_not_found",
+  "refresh_token_already_used",
+  "session_not_found",
+  "session_expired",
+  "bad_jwt",
+  "no_authorization",
+  "user_not_found",
+  "email_exists",
+  "user_already_exists",
+  "email_not_confirmed",
+  "weak_password",
+  "validation_failed",
+  "over_request_rate_limit",
+  "over_email_send_rate_limit",
+  "unexpected_failure",
 ]);
 
 export function createSupabaseAuthClient(baseUrl: string, serviceRoleKey: string): AuthClient {
@@ -34,40 +46,53 @@ export function createSupabaseAuthClient(baseUrl: string, serviceRoleKey: string
         headers: {
           apikey: serviceRoleKey,
           "Content-Type": "application/json",
-          ...options.headers
+          ...options.headers,
         },
       });
     } catch {
-      getLogger().error({ dependency: "supabase", operation, status: 503 }, "Supabase request failed");
+      getLogger().error(
+        { dependency: "supabase", operation, status: 503 },
+        "Supabase request failed",
+      );
       throw new HttpError("Auth service unavailable", 503);
     }
   }
 
-  async function handleSupabaseError(response: Response, operation: string): Promise<SupabaseError> {
+  async function handleSupabaseError(
+    response: Response,
+    operation: string,
+  ): Promise<SupabaseError> {
     const error = await getSafeSupabaseAuthError(response);
 
     const log = getLogger();
     const level = response.status >= 500 ? "error" : "warn";
-    log[level]({
-      dependency: "supabase",
-      operation,
-      status: response.status,
-      errorCode: error.code && SUPABASE_ERROR_CODES.has(error.code) ? error.code : "unknown",
-    }, "Supabase operation failed");
+    log[level](
+      {
+        dependency: "supabase",
+        operation,
+        status: response.status,
+        errorCode: error.code && SUPABASE_ERROR_CODES.has(error.code) ? error.code : "unknown",
+      },
+      "Supabase operation failed",
+    );
     return error;
   }
 
   return {
     async createUser(input) {
-      const response = await authRequest("admin/users", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          email: input.email,
-          password: input.password,
-          email_confirm: true
-        }),
-      }, "createUser");
+      const response = await authRequest(
+        "admin/users",
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            email: input.email,
+            password: input.password,
+            email_confirm: true,
+          }),
+        },
+        "createUser",
+      );
 
       if (!response.ok) {
         const error = await handleSupabaseError(response, "createUser");
@@ -76,9 +101,12 @@ export function createSupabaseAuthClient(baseUrl: string, serviceRoleKey: string
 
       let user: SupabaseUser;
       try {
-        user = await response.json() as SupabaseUser;
+        user = (await response.json()) as SupabaseUser;
       } catch {
-        getLogger().error({ dependency: "supabase", operation: "createUser", status: 500 }, "Supabase response could not be read");
+        getLogger().error(
+          { dependency: "supabase", operation: "createUser", status: 500 },
+          "Supabase response could not be read",
+        );
         throw new HttpError("Invalid auth service response", 500);
       }
 
@@ -86,7 +114,11 @@ export function createSupabaseAuthClient(baseUrl: string, serviceRoleKey: string
     },
 
     async deleteUser(userId) {
-      const response = await authRequest(`admin/users/${userId}`, { method: "DELETE", headers }, "deleteUser");
+      const response = await authRequest(
+        `admin/users/${userId}`,
+        { method: "DELETE", headers },
+        "deleteUser",
+      );
 
       if (!response.ok) {
         const error = await handleSupabaseError(response, "deleteUser");

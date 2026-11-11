@@ -6,7 +6,9 @@ export function captureLogs() {
   const calls: unknown[][] = [];
 
   for (const level of ["debug", "info", "warn", "error"] as const) {
-    jest.spyOn(getLogger(), level).mockImplementation((...args: unknown[]) => { calls.push(args); });
+    jest.spyOn(getLogger(), level).mockImplementation((...args: unknown[]) => {
+      calls.push(args);
+    });
   }
 
   return { calls };

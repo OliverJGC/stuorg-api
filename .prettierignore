@@ -1,0 +1,16 @@
+node_modules/
+.pnp.*
+.yarn/
+.next/
+.swc/
+out/
+build/
+dist/
+coverage/
+.cache/
+.vercel/
+**/generated/**
+**/*.generated.*
+next-env.d.ts
+*.tsbuildinfo
+package-lock.json

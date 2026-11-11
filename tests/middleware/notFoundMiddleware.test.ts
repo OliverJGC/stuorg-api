@@ -5,6 +5,7 @@ import { createAppConfig } from "../../mocks/createAppConfig.js";
 import { API_MESSAGE } from "../../src/utils/constants.js";
 
 jest.unstable_mockModule("../../src/infrastructure/createDependencies.js", () => ({
+  authService: undefined,
   organizationService: {
     createOrganization: jest.fn(),
     validateOrganizationName: jest.fn(),

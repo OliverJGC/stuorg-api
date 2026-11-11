@@ -1,6 +1,9 @@
 import { Router } from "express";
 
-import { createOrganizationController, validateOrganizationNameController } from "./organizationController.js";
+import {
+  createOrganizationController,
+  validateOrganizationNameController,
+} from "./organizationController.js";
 
 export const organizationRouter = Router();
 

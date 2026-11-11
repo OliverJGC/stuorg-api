@@ -1,9 +1,12 @@
 import { z } from "zod";
 
 const nonBlankString = z.string().trim().min(1);
-const utepEmail = z.string().trim().toLowerCase().email().refine(
-  (email) => email.endsWith("@miners.utep.edu") || email.endsWith("@utep.edu"),
-);
+const utepEmail = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email()
+  .refine((email) => email.endsWith("@miners.utep.edu") || email.endsWith("@utep.edu"));
 
 export const validateNameSchema = z.object({ name: nonBlankString });
 

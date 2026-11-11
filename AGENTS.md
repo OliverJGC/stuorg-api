@@ -12,7 +12,13 @@
 
 6. Test services and Zod schemas with unit tests, and controllers and routes together with integration tests. Cover success cases, errors, and edge cases without redundant tests.
 
-7. Use blank lines to separate logical sections, keep closely related statements together, and avoid unnecessary line wrapping. Follow the spacing and formatting in `src/infrastructure/createDependencies.ts`.
+7. Write readable, consistently formatted code. Follow these rules:
+   - Always use curly braces for if, else, for, while, and do statements, even when the body contains a single statement.
+   - Never compress control-flow statements, try/catch blocks, or function bodies onto one line.
+   - Use 2-space indentation and separate logical sections with blank lines.
+   - Prefer balanced formatting: keep short objects and arguments on one line when readable, but expand longer or more complex structures across multiple lines.
+   - Avoid unnecessary line wrapping, deeply nested expressions, and overly compact code.
+   - Follow the project's Prettier and ESLint configurations. Format and lint modified code before completing a task.
 
 8. Use `getLogger()` for request-aware Pino logs. Don’t log sensitive data.
 

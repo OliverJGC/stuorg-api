@@ -13,6 +13,7 @@ const organizationService = {
 
 jest.unstable_mockModule("../../../src/infrastructure/createDependencies.js", () => ({
   organizationService,
+  authService: undefined,
 }));
 
 const { createApp } = await import("../../../src/app.js");
@@ -35,35 +36,45 @@ describe("organization routes", () => {
   });
   it("rejects invalid creation input without invoking the service", async () => {
     const app = createApp(createAppConfig);
-    const response = await request(app).post("/internal/organizations").send({
-      name: "  ",
-      admin: {
-        firstName: "",
-        lastName: "Rivera",
-        email: "alex@example.com",
-        password: "short",
-        role: ""
-      },
-    });
+    const response = await request(app)
+      .post("/internal/organizations")
+      .send({
+        name: "  ",
+        admin: {
+          firstName: "",
+          lastName: "Rivera",
+          email: "alex@example.com",
+          password: "short",
+          role: "",
+        },
+      });
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ message: API_MESSAGE.INVALID_INPUT });
     expect(organizationService.createOrganization).not.toHaveBeenCalled();
   });
   it("returns a safe message when the service is unavailable", async () => {
-    organizationService.validateOrganizationName.mockRejectedValue(new HttpError("Database unavailable", 503));
+    organizationService.validateOrganizationName.mockRejectedValue(
+      new HttpError("Database unavailable", 503),
+    );
     const app = createApp(createAppConfig);
-    const response = await request(app).post("/internal/organizations/name-availability").send({ name: "Engineering Club" });
+    const response = await request(app)
+      .post("/internal/organizations/name-availability")
+      .send({ name: "Engineering Club" });
     expect(response.status).toBe(503);
     expect(response.body).toEqual({ message: API_MESSAGE.SERVICE_UNAVAILABLE });
   });
   it("returns a generic error when name validation throws unexpectedly", async () => {
     organizationService.validateOrganizationName.mockRejectedValue(new Error("private details"));
-    const response = await request(createApp(createAppConfig)).post("/internal/organizations/name-availability").send({ name: "Club" });
+    const response = await request(createApp(createAppConfig))
+      .post("/internal/organizations/name-availability")
+      .send({ name: "Club" });
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ message: API_MESSAGE.INTERNAL_SERVER_ERROR });
   });
   it("does not allow an unconfigured CORS origin", async () => {
-    const response = await request(createApp(createAppConfig)).get("/missing").set("Origin", "https://untrusted.example");
+    const response = await request(createApp(createAppConfig))
+      .get("/missing")
+      .set("Origin", "https://untrusted.example");
     expect(response.headers["access-control-allow-origin"]).toBeUndefined();
   });
   it("returns name availability for validated input", async () => {
@@ -80,13 +91,17 @@ describe("organization routes", () => {
     expect(organizationService.validateOrganizationName).toHaveBeenCalledWith("Engineering Club");
   });
   it("returns a message when the organization name is taken", async () => {
-    organizationService.validateOrganizationName.mockResolvedValue({ name: "Engineering Club", available: false });
+    organizationService.validateOrganizationName.mockResolvedValue({
+      name: "Engineering Club",
+      available: false,
+    });
     const response = await request(createApp(createAppConfig))
-      .post("/internal/organizations/name-availability").send({ name: "Engineering Club" });
+      .post("/internal/organizations/name-availability")
+      .send({ name: "Engineering Club" });
     expect(response.body).toEqual({
       name: "Engineering Club",
       available: false,
-      message: API_MESSAGE.ORGANIZATION_NAME_TAKEN
+      message: API_MESSAGE.ORGANIZATION_NAME_TAKEN,
     });
   });
   it("rejects an invalid organization name without invoking the service", async () => {
@@ -99,7 +114,9 @@ describe("organization routes", () => {
     expect(organizationService.validateOrganizationName).not.toHaveBeenCalled();
   });
   it("preserves an Auth failure status without exposing its message", async () => {
-    organizationService.createOrganization.mockRejectedValue(new HttpError("email is already registered in Supabase", 409));
+    organizationService.createOrganization.mockRejectedValue(
+      new HttpError("email is already registered in Supabase", 409),
+    );
     const app = createApp(createAppConfig);
     const response = await request(app).post("/internal/organizations").send(input);
     expect(response.status).toBe(409);
@@ -113,14 +130,23 @@ describe("organization routes", () => {
     expect(response.body).toEqual({ message: API_MESSAGE.INTERNAL_SERVER_ERROR });
   });
   it.each([
-    [400, API_MESSAGE.BAD_REQUEST], [401, API_MESSAGE.UNAUTHORIZED],
-    [403, API_MESSAGE.FORBIDDEN], [404, API_MESSAGE.NOT_FOUND],
-    [409, API_MESSAGE.CONFLICT], [422, API_MESSAGE.UNPROCESSABLE_ENTITY],
-    [429, API_MESSAGE.TOO_MANY_REQUESTS], [503, API_MESSAGE.SERVICE_UNAVAILABLE],
-    [418, API_MESSAGE.REQUEST_FAILED], [502, API_MESSAGE.INTERNAL_SERVER_ERROR],
+    [400, API_MESSAGE.BAD_REQUEST],
+    [401, API_MESSAGE.UNAUTHORIZED],
+    [403, API_MESSAGE.FORBIDDEN],
+    [404, API_MESSAGE.NOT_FOUND],
+    [409, API_MESSAGE.CONFLICT],
+    [422, API_MESSAGE.UNPROCESSABLE_ENTITY],
+    [429, API_MESSAGE.TOO_MANY_REQUESTS],
+    [503, API_MESSAGE.SERVICE_UNAVAILABLE],
+    [418, API_MESSAGE.REQUEST_FAILED],
+    [502, API_MESSAGE.INTERNAL_SERVER_ERROR],
   ])("uses a generic message for propagated status %s", async (status, message) => {
-    organizationService.createOrganization.mockRejectedValue(new HttpError("private provider details", status as number));
-    const response = await request(createApp(createAppConfig)).post("/internal/organizations").send(input);
+    organizationService.createOrganization.mockRejectedValue(
+      new HttpError("private provider details", status as number),
+    );
+    const response = await request(createApp(createAppConfig))
+      .post("/internal/organizations")
+      .send(input);
     expect(response.status).toBe(status);
     expect(response.body).toEqual({ message });
   });

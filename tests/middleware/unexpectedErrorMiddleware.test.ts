@@ -26,7 +26,9 @@ describe("unexpectedErrorMiddleware", () => {
   it("logs unexpected failures once and returns a generic JSON response", async () => {
     const log = captureLogs();
     const app = express();
-    app.get("/failure", () => { throw new Error("Internal failure"); });
+    app.get("/failure", () => {
+      throw new Error("Internal failure");
+    });
     app.use(unexpectedErrorMiddleware);
     const response = await request(app).get("/failure");
     expect(response.status).toBe(500);

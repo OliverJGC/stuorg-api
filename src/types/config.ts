@@ -1,3 +1,4 @@
+import type { AuthService } from "../modules/auth/authService.js";
 import type { OrganizationService } from "../modules/organizations/organizationService.js";
 
 export type RuntimeConfig = {
@@ -21,4 +22,5 @@ export type AuthClient = {
 
 export type ApplicationDependencies = {
   organizationService: OrganizationService;
+  authService: AuthService;
 };

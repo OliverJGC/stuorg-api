@@ -42,45 +42,55 @@ export function getLoggingConfig(environment: NodeJS.ProcessEnv = process.env) {
   }
 
   const { NODE_ENV, LOG_LEVEL } = result.data;
-  const defaultLevel = NODE_ENV === "development" ? "debug" : NODE_ENV === "test" ? "silent" : "info";
+  const defaultLevel =
+    NODE_ENV === "development" ? "debug" : NODE_ENV === "test" ? "silent" : "info";
 
   return { environment: NODE_ENV, logLevel: LOG_LEVEL ?? defaultLevel };
 }
 
-const environmentSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.string().regex(/^\d+$/).default("5001").transform(Number)
-    .pipe(z.number().int().min(1).max(65_535)),
-  DATABASE_URL: databaseUrlSchema,
-  SUPABASE_SERVICE_ROLE_KEY: z.string().trim().min(1),
-  SUPABASE_URL: z.string().url(),
-  CORS_ORIGINS: z.string()
-    .transform((value) => value.split(",").map((origin) => origin.trim()))
-    .pipe(z.array(originSchema).min(1))
-}).superRefine((value, context) => {
-  if (value.NODE_ENV !== "development" && !value.CORS_ORIGINS) {
-    context.addIssue({
-      code: "custom",
-      message: "Required outside development",
-      path: ["CORS_ORIGINS"],
-    });
-  }
+const environmentSchema = z
+  .object({
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    PORT: z
+      .string()
+      .regex(/^\d+$/)
+      .default("5001")
+      .transform(Number)
+      .pipe(z.number().int().min(1).max(65_535)),
+    DATABASE_URL: databaseUrlSchema,
+    SUPABASE_SERVICE_ROLE_KEY: z.string().trim().min(1),
+    SUPABASE_URL: z.string().url(),
+    CORS_ORIGINS: z
+      .string()
+      .transform((value) => value.split(",").map((origin) => origin.trim()))
+      .pipe(z.array(originSchema).min(1)),
+  })
+  .superRefine((value, context) => {
+    if (value.NODE_ENV !== "development" && !value.CORS_ORIGINS) {
+      context.addIssue({
+        code: "custom",
+        message: "Required outside development",
+        path: ["CORS_ORIGINS"],
+      });
+    }
 
-  if (Boolean(value.SUPABASE_URL) !== Boolean(value.SUPABASE_SERVICE_ROLE_KEY)) {
-    context.addIssue({
-      code: "custom",
-      message: "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured together",
-      path: ["SUPABASE_URL"],
-    });
-  }
-});
+    if (Boolean(value.SUPABASE_URL) !== Boolean(value.SUPABASE_SERVICE_ROLE_KEY)) {
+      context.addIssue({
+        code: "custom",
+        message: "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured together",
+        path: ["SUPABASE_URL"],
+      });
+    }
+  });
 
 export function getRuntimeConfig(environment: NodeJS.ProcessEnv = process.env): RuntimeConfig {
   const logging = getLoggingConfig(environment);
   const result = environmentSchema.safeParse(environment);
 
   if (!result.success) {
-    const names = [...new Set(result.error.issues.map((issue) => String(issue.path[0] ?? "configuration")))];
+    const names = [
+      ...new Set(result.error.issues.map((issue) => String(issue.path[0] ?? "configuration"))),
+    ];
     throw new Error(`Invalid configuration: ${names.join(", ")}`);
   }
 
@@ -92,6 +102,6 @@ export function getRuntimeConfig(environment: NodeJS.ProcessEnv = process.env): 
     logLevel: logging.logLevel,
     port: value.PORT,
     supabaseServiceRoleKey: value.SUPABASE_SERVICE_ROLE_KEY,
-    supabaseUrl: value.SUPABASE_URL
+    supabaseUrl: value.SUPABASE_URL,
   };
 }

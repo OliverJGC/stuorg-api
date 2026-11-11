@@ -19,7 +19,7 @@ const prismaErrors: Record<string, ErrorMapping> = {
   P2024: { status: 503, meaning: "Connection pool timeout" },
   P2025: {
     status: 404,
-    meaning: "Record required for operation was not found"
+    meaning: "Record required for operation was not found",
   },
   P2028: { status: 500, meaning: "Transaction API error" },
   P2034: { status: 409, meaning: "Write conflict or deadlock" },
@@ -28,21 +28,28 @@ const prismaErrors: Record<string, ErrorMapping> = {
 
 export function handleAndLogPrismaError(error: unknown): HttpError {
   // Keep existing HTTP errors unchanged; the controller logs them when caught.
-  if (error instanceof HttpError)
+  if (error instanceof HttpError) {
     return error;
+  }
 
   // For a known Prisma error, log its code and use the matching HTTP status.
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     const mapping = prismaErrors[error.code];
-    getLogger().error({
-      dependency: "prisma",
-      code: mapping ? error.code : "unknown",
-      status: mapping?.status ?? 500,
-    }, "Database operation failed");
+    getLogger().error(
+      {
+        dependency: "prisma",
+        code: mapping ? error.code : "unknown",
+        status: mapping?.status ?? 500,
+      },
+      "Database operation failed",
+    );
     return new HttpError(mapping?.meaning ?? "Unknown database error", mapping?.status ?? 500);
   }
 
   // We don't recognize this error, so treat it as a database failure. Only call this helper around database operations.
-  getLogger().error({ dependency: "prisma", code: "unknown", status: 500 }, "Database operation failed");
+  getLogger().error(
+    { dependency: "prisma", code: "unknown", status: 500 },
+    "Database operation failed",
+  );
   return new HttpError("Unexpected database error", 500);
 }

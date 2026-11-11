@@ -43,20 +43,28 @@ export function createOrganizationService(database: PrismaClient, auth: AuthClie
         select: { id: true },
       });
 
-      getLogger().info({ operation: "validateOrganizationName" }, "[organizationService] Checked organization name availability");
+      getLogger().info(
+        { operation: "validateOrganizationName" },
+        "[organizationService] Checked organization name availability",
+      );
       return { name, available: organization === null };
     } catch (error) {
       throw handleAndLogPrismaError(error);
     }
   }
 
-  async function createOrganization(input: CreateOrganizationInput): Promise<OrganizationCreationResult> {
+  async function createOrganization(
+    input: CreateOrganizationInput,
+  ): Promise<OrganizationCreationResult> {
     const name = input.name;
     const { firstName, lastName, email, password, role } = input.admin;
     const existingOrganization = await validateOrganizationName(name);
 
     if (!existingOrganization.available) {
-      getLogger().warn({ operation: "createOrganization", status: 409 }, "[organizationService] Organization name already exists");
+      getLogger().warn(
+        { operation: "createOrganization", status: 409 },
+        "[organizationService] Organization name already exists",
+      );
       throw new HttpError("Organization name already exists.", 409);
     }
 
@@ -82,7 +90,10 @@ export function createOrganizationService(database: PrismaClient, auth: AuthClie
         });
         return createdOrganization;
       });
-      getLogger().info({ operation: "createOrganization" }, "[organizationService] Created organization, user, and admin membership");
+      getLogger().info(
+        { operation: "createOrganization" },
+        "[organizationService] Created organization, user, and admin membership",
+      );
       return {
         organization: { id: organization.id, name: organization.name },
         admin: {
@@ -95,13 +106,22 @@ export function createOrganizationService(database: PrismaClient, auth: AuthClie
       };
     } catch (error) {
       const httpError = handleAndLogPrismaError(error);
-      getLogger().info({ operation: "createOrganization" }, "[organizationService] Cleaning up Supabase user after failed transaction");
+      getLogger().info(
+        { operation: "createOrganization" },
+        "[organizationService] Cleaning up Supabase user after failed transaction",
+      );
 
       try {
         await auth.deleteUser(authUser.userId);
-        getLogger().info({ operation: "createOrganization" }, "[organizationService] Deleted Supabase user after failed transaction");
+        getLogger().info(
+          { operation: "createOrganization" },
+          "[organizationService] Deleted Supabase user after failed transaction",
+        );
       } catch {
-        getLogger().error({ operation: "createOrganization" }, "[organizationService] Supabase user cleanup failed");
+        getLogger().error(
+          { operation: "createOrganization" },
+          "[organizationService] Supabase user cleanup failed",
+        );
       }
 
       throw httpError;

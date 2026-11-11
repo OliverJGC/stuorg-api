@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 import { getRuntimeConfig } from "../config/runtimeConfig.js";
+import { createAuthService } from "../modules/auth/authService.js";
 import { createOrganizationService } from "../modules/organizations/organizationService.js";
 import type { ApplicationDependencies, RuntimeConfig } from "../types/config.js";
 import { createSupabaseAuthClient } from "./auth/supabaseAuthClient.js";
@@ -32,8 +33,9 @@ export function createDependencies(config: RuntimeConfig): ApplicationDependenci
 
   getLogger().debug("Initialized application services");
   return {
-    organizationService: createOrganizationService(database, auth)
+    organizationService: createOrganizationService(database, auth),
+    authService: createAuthService(database, config.supabaseUrl, config.supabaseServiceRoleKey),
   };
 }
 
-export const { organizationService } = createDependencies(getRuntimeConfig());
+export const { organizationService, authService } = createDependencies(getRuntimeConfig());

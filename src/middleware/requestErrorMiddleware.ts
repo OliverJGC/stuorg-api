@@ -7,7 +7,12 @@ type ParserError = Error & {
   type?: string;
 };
 
-export const requestErrorMiddleware: ErrorRequestHandler = (error: ParserError, _request, response, next) => {
+export const requestErrorMiddleware: ErrorRequestHandler = (
+  error: ParserError,
+  _request,
+  response,
+  next,
+) => {
   if (error instanceof SyntaxError && error.status === 400) {
     response.status(400).json({ message: API_MESSAGE.INVALID_JSON });
     return;

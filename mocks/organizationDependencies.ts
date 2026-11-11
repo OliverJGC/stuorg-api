@@ -10,7 +10,10 @@ export function createOrganizationDependencies() {
     deleteUser: jest.fn<AuthClient["deleteUser"]>(),
   };
   const findFirst = jest.fn<(input: unknown) => Promise<{ id: string } | null>>();
-  const transaction = jest.fn<(callback: (client: Prisma.TransactionClient) => Promise<unknown>) => Promise<unknown>>();
+  const transaction =
+    jest.fn<
+      (callback: (client: Prisma.TransactionClient) => Promise<unknown>) => Promise<unknown>
+    >();
   const database = {
     $transaction: transaction,
     organization: { findFirst },
