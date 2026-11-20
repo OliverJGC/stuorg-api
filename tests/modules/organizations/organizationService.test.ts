@@ -21,6 +21,7 @@ describe("organizationService", () => {
       select: { id: true },
     });
   });
+
   it("creates the Auth account and all application records in one transaction", async () => {
     const dependencies = createOrganizationDependencies();
     dependencies.auth.createUser.mockResolvedValue({ userId: "auth-user-id" });
@@ -80,6 +81,7 @@ describe("organizationService", () => {
       },
     });
   });
+
   it("rejects a duplicate organization name before creating an Auth account", async () => {
     const dependencies = createOrganizationDependencies();
     dependencies.findFirst.mockResolvedValue({ id: "organization-id" });
@@ -98,6 +100,7 @@ describe("organizationService", () => {
     expect(dependencies.auth.createUser).not.toHaveBeenCalled();
     expect(dependencies.transaction).not.toHaveBeenCalled();
   });
+
   it("propagates an Auth creation failure without starting a database transaction", async () => {
     const dependencies = createOrganizationDependencies();
     const authError = new HttpError("Auth unavailable", 503);
@@ -118,6 +121,7 @@ describe("organizationService", () => {
     expect(dependencies.transaction).not.toHaveBeenCalled();
     expect(dependencies.auth.deleteUser).not.toHaveBeenCalled();
   });
+
   it("propagates a name lookup failure before creating an Auth account", async () => {
     const dependencies = createOrganizationDependencies();
     const lookupError = new Error("database unavailable");
@@ -136,6 +140,7 @@ describe("organizationService", () => {
     ).rejects.toMatchObject({ statusCode: 500, message: "Unexpected database error" });
     expect(dependencies.auth.createUser).not.toHaveBeenCalled();
   });
+
   it("deletes the newly-created Auth account when the database transaction fails", async () => {
     const dependencies = createOrganizationDependencies();
     dependencies.auth.createUser.mockResolvedValue({ userId: "auth-user-id" });
@@ -156,6 +161,7 @@ describe("organizationService", () => {
     ).rejects.toMatchObject({ message: "Unexpected database error", statusCode: 500 });
     expect(dependencies.auth.deleteUser).toHaveBeenCalledWith("auth-user-id");
   });
+
   it("does not mask a transaction failure when Auth cleanup fails", async () => {
     const dependencies = createOrganizationDependencies();
     dependencies.auth.createUser.mockResolvedValue({ userId: "auth-user-id" });
@@ -175,6 +181,7 @@ describe("organizationService", () => {
       }),
     ).rejects.toMatchObject({ message: "Unexpected database error", statusCode: 500 });
   });
+
   it("uses a generic transaction error for a non-Error failure", async () => {
     const dependencies = createOrganizationDependencies();
     dependencies.auth.createUser.mockResolvedValue({ userId: "auth-user-id" });
@@ -195,6 +202,7 @@ describe("organizationService", () => {
     ).rejects.toMatchObject({ message: "Unexpected database error", statusCode: 500 });
     expect(dependencies.auth.deleteUser).toHaveBeenCalledWith("auth-user-id");
   });
+
   it("marks an unclaimed organization name as available", async () => {
     const dependencies = createOrganizationDependencies();
     dependencies.findFirst.mockResolvedValue(null);
@@ -241,6 +249,7 @@ describe("organization dependency error propagation", () => {
     ]);
     expect(JSON.stringify(log.calls)).not.toContain("Original auth failure");
   });
+
   it.each([false, true])("preserves Prisma status when cleanup fails: %s", async (cleanupFails) => {
     const log = captureLogs();
     const fetch = jest

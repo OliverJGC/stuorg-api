@@ -79,6 +79,7 @@ export function createOrganizationService(database: PrismaClient, auth: AuthClie
             lastName,
           },
         });
+
         const createdOrganization = await transaction.organization.create({ data: { name } });
         await transaction.membership.create({
           data: {
@@ -88,12 +89,15 @@ export function createOrganizationService(database: PrismaClient, auth: AuthClie
             isAdmin: true,
           },
         });
+
         return createdOrganization;
       });
+
       getLogger().info(
         { operation: "createOrganization" },
         "[organizationService] Created organization, user, and admin membership",
       );
+
       return {
         organization: { id: organization.id, name: organization.name },
         admin: {

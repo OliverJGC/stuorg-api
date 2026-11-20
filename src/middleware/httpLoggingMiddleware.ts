@@ -38,17 +38,21 @@ export function createHttpLoggingMiddleware(logger: Logger): RequestHandler[] {
       if (response.statusCode >= 500 || error) {
         return "error";
       }
+
       if (response.statusCode >= 400) {
         return "warn";
       }
+
       if (request.method === "OPTIONS" && response.statusCode >= 200 && response.statusCode < 300) {
         return "silent";
       }
+
       return "info";
     },
     customSuccessMessage: () => "Request completed",
     customErrorMessage: () => "Request failed",
   });
+
   const context: RequestHandler = (request, _response, next) => {
     runWithLogger(request.log, next);
   };

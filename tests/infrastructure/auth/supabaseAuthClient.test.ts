@@ -7,6 +7,7 @@ describe("supabaseAuthClient", () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
+
   it("creates a confirmed Supabase user", async () => {
     const fetch = jest.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ id: "auth-user-id", email: "alex@miners.utep.edu" }), {
@@ -34,6 +35,7 @@ describe("supabaseAuthClient", () => {
       }),
     });
   });
+
   it("rejects an unreadable successful user response", async () => {
     jest.spyOn(globalThis, "fetch").mockResolvedValue(new Response("not json", { status: 201 }));
     const client = createSupabaseAuthClient("https://project.supabase.co", "service-role-key");
@@ -41,6 +43,7 @@ describe("supabaseAuthClient", () => {
       client.createUser({ email: "a@example.com", password: "password" }),
     ).rejects.toMatchObject({ statusCode: 500, message: "Invalid auth service response" });
   });
+
   it("uses a fixed message and preserves the status for a failed user creation", async () => {
     jest.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ message: "Email already registered" }), {
@@ -53,6 +56,7 @@ describe("supabaseAuthClient", () => {
       authClient.createUser({ email: "alex@miners.utep.edu", password: "example-password" }),
     ).rejects.toMatchObject({ message: "Auth request failed", status: 409 });
   });
+
   it("translates a transport failure to a service-unavailable error", async () => {
     jest.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network unavailable"));
     const authClient = createSupabaseAuthClient("https://project.supabase.co", "service-role-key");
@@ -60,6 +64,7 @@ describe("supabaseAuthClient", () => {
       authClient.createUser({ email: "alex@miners.utep.edu", password: "example-password" }),
     ).rejects.toMatchObject({ message: "Auth service unavailable", status: 503 });
   });
+
   it("deletes a Supabase user", async () => {
     const fetch = jest
       .spyOn(globalThis, "fetch")
@@ -78,6 +83,7 @@ describe("supabaseAuthClient", () => {
       },
     );
   });
+
   it("preserves the Supabase status when user deletion fails", async () => {
     jest.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ message: "User not found" }), {

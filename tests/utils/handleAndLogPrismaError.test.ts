@@ -43,11 +43,13 @@ describe("handleAndLogPrismaError", () => {
     ]);
     expect(JSON.stringify(log.calls)).not.toContain("private database details");
   });
+
   it("passes an existing HttpError through without logging it again", () => {
     const error = new HttpError("internal provider error", 422);
     expect(handleAndLogPrismaError(error)).toBe(error);
     expect(log.calls).toHaveLength(0);
   });
+
   it("keeps database meaning internally", () => {
     const error = new Prisma.PrismaClientKnownRequestError("private database details", {
       code: "P2002",
@@ -58,12 +60,14 @@ describe("handleAndLogPrismaError", () => {
       message: "Unique constraint violation",
     });
   });
+
   it("uses a generic response for unexpected errors", () => {
     expect(handleAndLogPrismaError(new Error("private details"))).toMatchObject({
       statusCode: 500,
       message: "Unexpected database error",
     });
   });
+
   it("uses a generic response and log code for an unknown Prisma code", () => {
     const error = new Prisma.PrismaClientKnownRequestError("private details", {
       code: "P9999",

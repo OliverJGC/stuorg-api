@@ -32,6 +32,7 @@ export function createDependencies(config: RuntimeConfig): ApplicationDependenci
   const database = new PrismaClient({ datasourceUrl });
 
   getLogger().debug("Initialized application services");
+
   return {
     organizationService: createOrganizationService(database, auth),
     authService: createAuthService(database, config.supabaseUrl, config.supabaseServiceRoleKey),

@@ -3,7 +3,12 @@ import type { PrismaClient } from "@prisma/client";
 import { createAuthService } from "../../../src/modules/auth/authService.js";
 
 const findMany = jest.fn<() => Promise<unknown>>();
-const database = { membership: { findMany } } as unknown as PrismaClient;
+const findUniqueOrThrow = jest.fn<() => Promise<unknown>>();
+const database = {
+  user: { findUniqueOrThrow },
+  membership: { findMany },
+} as unknown as PrismaClient;
+const user = { id: "user-one", firstName: "Alex", lastName: "Rivera" };
 const fetchMock = jest.fn<typeof fetch>();
 const service = createAuthService(database, "https://supabase.example", "server-key");
 const json = (value: unknown, status = 200) =>
@@ -12,6 +17,7 @@ const json = (value: unknown, status = 200) =>
 beforeEach(() => {
   jest.resetAllMocks();
   global.fetch = fetchMock;
+  findUniqueOrThrow.mockResolvedValue(user);
 });
 
 test("validates the token and scopes memberships to the authenticated user", async () => {
@@ -20,7 +26,13 @@ test("validates the token and scopes memberships to the authenticated user", asy
     { organizationId: "org", organization: { name: "Club" }, role: "Member", isAdmin: false },
   ]);
   const result = await service.restore("access", "refresh");
+  expect(result.user).toEqual(user);
+  expect(findUniqueOrThrow).toHaveBeenCalledWith(
+    expect.objectContaining({ where: { id: user.id } }),
+  );
   expect(result.memberships).toEqual([{ id: "org", name: "Club", role: "Member", isAdmin: false }]);
+  expect(result).toHaveProperty("refreshedSession", undefined);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
   expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: "user-one" } }));
 });
 
@@ -33,12 +45,22 @@ test("refreshes an expired session and validates the new access token", async ()
     .mockResolvedValueOnce(json({ id: "user-one" }));
   findMany.mockResolvedValueOnce([]);
   const result = await service.restore("expired", "refresh");
-  expect(result.session).toEqual({
+  expect(result.user).toEqual(user);
+  expect(result.memberships).toEqual([]);
+  expect(result.refreshedSession).toEqual({
     accessToken: "new",
     refreshToken: "new-refresh",
     expiresIn: 3600,
   });
   expect(fetchMock).toHaveBeenCalledTimes(3);
+});
+
+test("propagates profile lookup errors", async () => {
+  const error = new Error("Record not found");
+  fetchMock.mockResolvedValueOnce(json({ id: "user-one" }));
+  findUniqueOrThrow.mockRejectedValueOnce(error);
+  await expect(service.restore("access", "refresh")).rejects.toBe(error);
+  expect(findMany).not.toHaveBeenCalled();
 });
 
 test("rejects invalid credentials and expired refresh tokens safely", async () => {

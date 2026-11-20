@@ -14,6 +14,11 @@ npm run dev
 
 The API listens on port 5001 by default. Use `npm run build` to generate Prisma Client and compile the app, then `npm start` to run the compiled version. Use `npm run typecheck` to check TypeScript.
 
+## Before pushing
+
+- `npm run fix` applies ESLint fixes, then formats code with Prettier.
+- `npm run check` runs lint, formatting checks, typechecking, and tests.
+
 ## Configuration
 
 - `NODE_ENV`: `development` (default), `test`, or `production`.

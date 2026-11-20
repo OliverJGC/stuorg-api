@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import type { RuntimeConfig } from "../types/config.js";
 
 const DEFAULT_DEVELOPMENT_ORIGIN = "http://localhost:3000";
@@ -6,6 +7,7 @@ const DEFAULT_DEVELOPMENT_ORIGIN = "http://localhost:3000";
 const originSchema = z.string().refine((value) => {
   try {
     const url = new URL(value);
+
     return (
       (url.protocol === "http:" || url.protocol === "https:") &&
       url.origin === value &&
@@ -19,6 +21,7 @@ const originSchema = z.string().refine((value) => {
 const databaseUrlSchema = z.string().refine((value) => {
   try {
     const url = new URL(value);
+
     return (
       (url.protocol === "postgres:" || url.protocol === "postgresql:") &&
       Boolean(url.hostname) &&
@@ -95,6 +98,7 @@ export function getRuntimeConfig(environment: NodeJS.ProcessEnv = process.env): 
   }
 
   const value = result.data;
+
   return {
     corsOrigins: [...new Set(value.CORS_ORIGINS ?? [DEFAULT_DEVELOPMENT_ORIGIN])],
     databaseUrl: value.DATABASE_URL,

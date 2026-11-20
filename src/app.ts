@@ -22,6 +22,7 @@ export function createApp(
   app.disable("x-powered-by");
   app.set("trust proxy", false);
   app.use(helmet());
+
   app.use(
     cors({
       allowedHeaders: ["Authorization", "Content-Type"],
@@ -37,6 +38,7 @@ export function createApp(
     }),
   );
   app.use(express.json({ inflate: false, limit: "100kb" }));
+
   app.use("/auth", createAuthRouter(authService, config));
   app.use(
     "/internal/organizations",
@@ -46,8 +48,10 @@ export function createApp(
     },
     organizationRouter,
   );
+
   app.use(requestErrorMiddleware);
   app.use(notFoundMiddleware);
   app.use(unexpectedErrorMiddleware);
+
   return app;
 }

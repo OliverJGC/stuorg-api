@@ -1,12 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { HttpError } from "../../types/httpError.js";
+import type { AuthSession, Membership, ProviderSession, SessionUser } from "../../types/auth.js";
 import { getLogger } from "../../infrastructure/logging/logger.js";
-
-export type AuthSession = { accessToken: string; refreshToken: string; expiresIn: number };
-export type Membership = { id: string; name: string; role: string; isAdmin: boolean };
-
-type ProviderSession = { access_token: string; refresh_token: string; expires_in: number };
 
 export function createAuthService(database: PrismaClient, baseUrl: string, apiKey: string) {
   async function providerRequest(path: string, options: RequestInit): Promise<Response> {
@@ -29,6 +25,7 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
       method: "POST",
       body: JSON.stringify(body),
     });
+
     if (!response.ok) {
       throw new HttpError(
         "Authentication failed",
@@ -36,6 +33,7 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
       );
     }
     let data: ProviderSession;
+
     try {
       data = (await response.json()) as ProviderSession;
       if (
@@ -49,6 +47,7 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
     } catch {
       throw new HttpError("Invalid auth service response", 503);
     }
+
     return {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
@@ -61,21 +60,27 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
       method: "GET",
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+
     if (response.status === 401 || response.status === 403) {
       return null;
     }
+
     if (!response.ok) {
       throw new HttpError("Auth service unavailable", 503);
     }
+
     let user: { id?: unknown };
+
     try {
       user = (await response.json()) as { id?: unknown };
     } catch {
       throw new HttpError("Invalid auth service response", 503);
     }
+
     if (typeof user.id !== "string" || !user.id) {
       throw new HttpError("Invalid auth service response", 503);
     }
+
     return user.id;
   }
 
@@ -83,21 +88,34 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
     signIn(email: string, password: string): Promise<AuthSession> {
       return sessionRequest({ email, password }, "password");
     },
+
     async restore(
       accessToken: string | undefined,
       refreshToken: string | undefined,
-    ): Promise<{ memberships: Membership[]; session?: AuthSession }> {
+    ): Promise<{
+      user: SessionUser;
+      memberships: Membership[];
+      refreshedSession: AuthSession | undefined;
+    }> {
       let userId = accessToken ? await getUser(accessToken) : null;
-      let session: AuthSession | undefined;
+      let refreshedSession: AuthSession | undefined;
+
       if (!userId && refreshToken) {
-        session = await sessionRequest({ refresh_token: refreshToken }, "refresh_token");
-        userId = await getUser(session.accessToken);
+        refreshedSession = await sessionRequest({ refresh_token: refreshToken }, "refresh_token");
+        userId = await getUser(refreshedSession.accessToken);
       }
+
       if (!userId) {
         throw new HttpError("Session expired", 401);
       }
+
+      const user = await database.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { id: true, firstName: true, lastName: true },
+      });
+
       const rows = await database.membership.findMany({
-        where: { userId },
+        where: { userId: user.id },
         select: {
           organizationId: true,
           organization: { select: { name: true } },
@@ -106,19 +124,23 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
         },
         orderBy: { organization: { name: "asc" } },
       });
+
       const memberships = rows.map((row) => ({
         id: row.organizationId,
         name: row.organization.name,
         role: row.role,
         isAdmin: row.isAdmin,
       }));
-      return session ? { memberships, session } : { memberships };
+
+      return { user, memberships, refreshedSession };
     },
+
     async signOut(
       accessToken: string | undefined,
       refreshToken: string | undefined,
     ): Promise<void> {
       let token = accessToken;
+
       if ((!token || !(await getUser(token))) && refreshToken) {
         try {
           token = (await sessionRequest({ refresh_token: refreshToken }, "refresh_token"))
@@ -130,13 +152,16 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
           throw error;
         }
       }
+
       if (!token) {
         return;
       }
+
       const response = await providerRequest("logout?scope=local", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (!response.ok && response.status !== 401 && response.status !== 403) {
         throw new HttpError("Auth service unavailable", 503);
       }

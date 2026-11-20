@@ -4,7 +4,8 @@ import { z } from "zod";
 import type { RuntimeConfig } from "../../types/config.js";
 import { HttpError } from "../../types/httpError.js";
 import { API_MESSAGE, HTTP_STATUS_MESSAGES } from "../../utils/constants.js";
-import type { AuthService, AuthSession } from "./authService.js";
+import type { AuthSession } from "../../types/auth.js";
+import type { AuthService } from "./authService.js";
 
 const signInSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -18,9 +19,11 @@ function readCookie(request: Request, name: string): string | undefined {
     ?.split(";")
     .map((part) => part.trim())
     .find((part) => part.startsWith(`${name}=`));
+
   if (!pair) {
     return undefined;
   }
+
   try {
     return decodeURIComponent(pair.slice(name.length + 1));
   } catch {
@@ -50,15 +53,19 @@ export function createAuthRouter(
       maxAge: 365 * 24 * 60 * 60 * 1000,
     });
   }
+
   function clearSession(response: Response) {
     response.clearCookie(ACCESS_COOKIE, options);
     response.clearCookie(REFRESH_COOKIE, options);
   }
+
   function sendError(response: Response, error: unknown) {
     const status = error instanceof HttpError ? error.status : 500;
+
     if (status === 401) {
       clearSession(response);
     }
+
     response
       .status(status)
       .json({ message: HTTP_STATUS_MESSAGES[status] ?? API_MESSAGE.INTERNAL_SERVER_ERROR });
@@ -66,19 +73,23 @@ export function createAuthRouter(
 
   router.use((request, response, next) => {
     const origin = request.get("Origin");
+
     if (!origin || !config.corsOrigins.includes(origin)) {
       response.status(403).json({ message: API_MESSAGE.FORBIDDEN });
       return;
     }
+
     next();
   });
 
   router.post("/sign-in", async (request, response) => {
     const input = signInSchema.safeParse(request.body);
+
     if (!input.success) {
       response.status(400).json({ message: API_MESSAGE.INVALID_INPUT });
       return;
     }
+
     try {
       setSession(response, await service.signIn(input.data.email, input.data.password));
       response.json({ ok: true });
@@ -90,16 +101,23 @@ export function createAuthRouter(
   router.get("/session", async (request, response) => {
     const access = readCookie(request, ACCESS_COOKIE);
     const refresh = readCookie(request, REFRESH_COOKIE);
+
     if (!access && !refresh) {
       response.status(401).json({ message: API_MESSAGE.UNAUTHORIZED });
       return;
     }
+
     try {
       const result = await service.restore(access, refresh);
-      if (result.session) {
-        setSession(response, result.session);
+
+      if (result.refreshedSession) {
+        setSession(response, result.refreshedSession);
       }
-      response.set("Cache-Control", "no-store").json({ memberships: result.memberships });
+
+      response.set("Cache-Control", "no-store").json({
+        user: result.user,
+        memberships: result.memberships,
+      });
     } catch (error) {
       sendError(response, error);
     }
