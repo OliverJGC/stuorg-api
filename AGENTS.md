@@ -35,3 +35,11 @@
 12. Log schema validation failures as warnings. Never log the request body or its values.
 
 13. Write controller success messages about the response being returned. Write service success messages about the business or database action completed.
+
+14. Follow semantic naming principles:
+   - **Variables use nouns:** Describe the data, for example `organizationName` or `accessToken`.
+   - **Functions use verb + noun:** Describe the action, for example `createOrganization()` or `getUser()`.
+   - **Booleans use prefixes:** Start with `is`, `has`, `can`, or `should`, for example `isAuthenticated` or `hasPermission`.
+   - **Avoid magic numbers and unclear abbreviations:** Use named constants and full words, for example `SECONDS_IN_A_DAY` instead of `86400`, and `organizationName` instead of `orgNm`.
+
+   Allow framework-required names and familiar abbreviations such as API and ID.

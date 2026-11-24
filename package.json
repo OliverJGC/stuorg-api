@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "node --env-file-if-exists=.env --import tsx --watch src/server.ts",
+    "dev:test": "node --env-file-if-exists=.env --import tsx --watch src/modules/testUtilities/testServer.ts",
     "build": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\" && prisma generate --schema src/infrastructure/prisma/schema.prisma && tsc",
     "typecheck": "tsc --noEmit",
     "start": "node --env-file-if-exists=.env dist/server.js",
