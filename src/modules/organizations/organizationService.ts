@@ -3,37 +3,12 @@ import type { PrismaClient } from "@prisma/client";
 import { getLogger } from "../../infrastructure/logging/logger.js";
 import type { AuthClient } from "../../types/config.js";
 import { handleAndLogPrismaError } from "../../utils/handleAndLogPrismaError.js";
+import type {
+  OrgNameValidationResult,
+  CreateOrganizationInput,
+  OrganizationCreationResult,
+} from "./types.js";
 import { HttpError } from "../../types/httpError.js";
-
-export type OrgNameValidationResult = {
-  name: string;
-  available: boolean;
-};
-
-export type CreateOrganizationInput = {
-  name: string;
-  admin: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    role: string;
-  };
-};
-
-export type OrganizationCreationResult = {
-  organization: {
-    id: string;
-    name: string;
-  };
-  admin: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    role: string;
-  };
-};
 
 export function createOrganizationService(database: PrismaClient, auth: AuthClient) {
   async function validateOrganizationName(name: string): Promise<OrgNameValidationResult> {

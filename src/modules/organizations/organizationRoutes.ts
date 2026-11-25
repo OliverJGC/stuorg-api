@@ -1,11 +1,14 @@
 import { Router } from "express";
 
-import {
-  createOrganizationController,
-  validateOrganizationNameController,
-} from "./organizationController.js";
+import { createOrganizationController } from "./organizationController.js";
+import type { OrganizationService } from "./organizationService.js";
 
-export const organizationRouter = Router();
+export function createOrganizationRouter(service: OrganizationService): Router {
+  const router = Router();
+  const organizationController = createOrganizationController(service);
 
-organizationRouter.post("/name-availability", validateOrganizationNameController);
-organizationRouter.post("/", createOrganizationController);
+  router.post("/name-availability", organizationController.validateOrganizationNameController);
+  router.post("/", organizationController.createOrganizationController);
+
+  return router;
+}

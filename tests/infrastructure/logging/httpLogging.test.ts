@@ -88,7 +88,7 @@ describe("HTTP logging", () => {
   it("does not log successful CORS preflights", async () => {
     const { app, events } = captureApp();
     const response = await request(app)
-      .options("/internal/organizations")
+      .options("/organizations")
       .set("Origin", "http://localhost:3000")
       .set("Access-Control-Request-Method", "POST");
 
@@ -118,7 +118,7 @@ describe("HTTP logging", () => {
       );
 
     const response = await request(app)
-      .post("/internal/organizations?token=private-query")
+      .post("/organizations?token=private-query")
       .set("X-Request-ID", "private-incoming-id")
       .set("Authorization", "Bearer private-auth")
       .set("Cookie", "refresh=private-cookie")
@@ -133,7 +133,7 @@ describe("HTTP logging", () => {
     expect(summaries).toHaveLength(1);
     expect(summaries[0]).toMatchObject({
       method: "POST",
-      route: "/internal/organizations/",
+      route: "/organizations/",
       status: 409,
       level: 40,
     });
@@ -143,7 +143,7 @@ describe("HTTP logging", () => {
   it("summarizes malformed JSON and unknown routes without logging raw URLs or payloads", async () => {
     const { app, events, lines } = captureApp();
     const malformed = await request(app)
-      .post("/internal/organizations?password=private-query")
+      .post("/organizations?password=private-query")
       .set("Content-Type", "application/json")
       .send('{"password":"private-body"');
     const missing = await request(app).get("/private-path?token=private-token");
@@ -163,7 +163,7 @@ describe("HTTP logging", () => {
     const { app, events, lines } = captureApp();
     dependencies.findFirst.mockRejectedValue(new Error("private-error-message"));
     const response = await request(app)
-      .post("/internal/organizations/name-availability")
+      .post("/organizations/name-availability")
       .send({ name: "Club" });
     expect(response.status).toBe(500);
     const summaries = events().filter((event) => event.duration_ms !== undefined);
@@ -179,8 +179,8 @@ describe("HTTP logging", () => {
       return { id: "existing-organization" };
     });
     const responses = await Promise.all([
-      request(app).post("/internal/organizations").send(input),
-      request(app).post("/internal/organizations/name-availability").send({ name: "Club" }),
+      request(app).post("/organizations").send(input),
+      request(app).post("/organizations/name-availability").send({ name: "Club" }),
     ]);
     const firstId: unknown = responses[0]?.headers["x-request-id"];
     const secondId: unknown = responses[1]?.headers["x-request-id"];
@@ -194,7 +194,7 @@ describe("HTTP logging", () => {
       expect.objectContaining({
         level: 30,
         status: 200,
-        route: "/internal/organizations/name-availability",
+        route: "/organizations/name-availability",
       }),
     ]);
     expect(events().every((event) => event.reqId === firstId || event.reqId === secondId)).toBe(
@@ -210,7 +210,7 @@ describe("HTTP logging", () => {
       }),
     );
     dependencies.findFirst.mockResolvedValue(null);
-    const response = await request(app).post("/internal/organizations").send(input);
+    const response = await request(app).post("/organizations").send(input);
     expect(response.status).toBe(429);
     expect(events()).toContainEqual(
       expect.objectContaining({ dependency: "supabase", errorCode: "unknown", level: 40 }),

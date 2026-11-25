@@ -8,9 +8,9 @@ import { createHttpLoggingMiddleware } from "./middleware/httpLoggingMiddleware.
 import { notFoundMiddleware } from "./middleware/notFoundMiddleware.js";
 import { unexpectedErrorMiddleware } from "./middleware/unexpectedErrorMiddleware.js";
 import { requestErrorMiddleware } from "./middleware/requestErrorMiddleware.js";
-import { authService } from "./infrastructure/createDependencies.js";
+import { authService, organizationService } from "./infrastructure/createDependencies.js";
 import { createAuthRouter } from "./modules/auth/authRoutes.js";
-import { organizationRouter } from "./modules/organizations/organizationRoutes.js";
+import { createOrganizationRouter } from "./modules/organizations/organizationRoutes.js";
 import type { RuntimeConfig } from "./types/config.js";
 
 export function createApp(
@@ -39,14 +39,22 @@ export function createApp(
   );
   app.use(express.json({ inflate: false, limit: "100kb" }));
 
-  app.use("/auth", createAuthRouter(authService, config));
   app.use(
-    "/internal/organizations",
+    "/auth",
     (_request, response, next) => {
-      response.locals.logRoutePrefix = "/internal/organizations";
+      response.locals.logRoutePrefix = "/auth";
       next();
     },
-    organizationRouter,
+    createAuthRouter(authService, config),
+  );
+
+  app.use(
+    "/organizations",
+    (_request, response, next) => {
+      response.locals.logRoutePrefix = "/organizations";
+      next();
+    },
+    createOrganizationRouter(organizationService),
   );
 
   app.use(requestErrorMiddleware);

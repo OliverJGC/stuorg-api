@@ -83,3 +83,58 @@ test("revokes the current provider session on sign-out", async () => {
   await service.signOut("access", "refresh");
   expect(fetchMock.mock.calls[1]?.[0]).toContain("logout?scope=local");
 });
+
+test.each([400, 429, 500])("maps provider session failure %i", async (status) => {
+  fetchMock.mockResolvedValueOnce(json({}, status));
+  await expect(service.signIn("a@utep.edu", "secret")).rejects.toMatchObject({
+    status: status === 500 ? 503 : status === 429 ? 429 : 401,
+  });
+});
+
+test.each([
+  {},
+  { access_token: "a" },
+  { access_token: "a", refresh_token: "r" },
+  { access_token: "a", refresh_token: "r", expires_in: 0 },
+])("rejects malformed provider sessions", async (payload) => {
+  fetchMock.mockResolvedValueOnce(json(payload));
+  await expect(service.signIn("a@utep.edu", "secret")).rejects.toMatchObject({ status: 503 });
+});
+
+test.each([json({}, 500), new Response("invalid"), json({}), json({ id: "" })])(
+  "rejects provider user lookup failures",
+  async (response) => {
+    fetchMock.mockResolvedValueOnce(response);
+    await expect(service.restore("access", undefined)).rejects.toMatchObject({ status: 503 });
+  },
+);
+
+test("rejects a missing or forbidden session", async () => {
+  await expect(service.restore(undefined, undefined)).rejects.toMatchObject({ status: 401 });
+  fetchMock.mockResolvedValueOnce(json({}, 403));
+  await expect(service.restore("access", undefined)).rejects.toMatchObject({ status: 401 });
+});
+
+test("signs out using a refreshed token", async () => {
+  fetchMock
+    .mockResolvedValueOnce(json({ access_token: "new", refresh_token: "r", expires_in: 1 }))
+    .mockResolvedValueOnce(new Response(null, { status: 204 }));
+  await service.signOut(undefined, "refresh");
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+test.each([400, 500])("handles refresh failure %i during sign out", async (status) => {
+  fetchMock.mockResolvedValueOnce(json({}, status));
+  const result = service.signOut(undefined, "refresh");
+  if (status === 400) {
+    await expect(result).resolves.toBeUndefined();
+  } else {
+    await expect(result).rejects.toMatchObject({ status: 503 });
+  }
+});
+
+test("handles sign out without a token and provider logout failures", async () => {
+  await expect(service.signOut(undefined, undefined)).resolves.toBeUndefined();
+  fetchMock.mockResolvedValueOnce(json({ id: "user-one" })).mockResolvedValueOnce(json({}, 500));
+  await expect(service.signOut("access", undefined)).rejects.toMatchObject({ status: 503 });
+});
