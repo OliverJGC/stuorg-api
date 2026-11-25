@@ -38,7 +38,7 @@ describe("organization routes", () => {
   it("rejects invalid creation input without invoking the service", async () => {
     const app = createApp(createAppConfig);
     const response = await request(app)
-      .post("/internal/organizations")
+      .post("/organizations")
       .send({
         name: "  ",
         admin: {
@@ -60,7 +60,7 @@ describe("organization routes", () => {
     );
     const app = createApp(createAppConfig);
     const response = await request(app)
-      .post("/internal/organizations/name-availability")
+      .post("/organizations/name-availability")
       .send({ name: "Engineering Club" });
     expect(response.status).toBe(503);
     expect(response.body).toEqual({ message: API_MESSAGE.SERVICE_UNAVAILABLE });
@@ -69,7 +69,7 @@ describe("organization routes", () => {
   it("returns a generic error when name validation throws unexpectedly", async () => {
     organizationService.validateOrganizationName.mockRejectedValue(new Error("private details"));
     const response = await request(createApp(createAppConfig))
-      .post("/internal/organizations/name-availability")
+      .post("/organizations/name-availability")
       .send({ name: "Club" });
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ message: API_MESSAGE.INTERNAL_SERVER_ERROR });
@@ -89,7 +89,7 @@ describe("organization routes", () => {
     });
     const app = createApp(createAppConfig);
     const response = await request(app)
-      .post("/internal/organizations/name-availability")
+      .post("/organizations/name-availability")
       .send({ name: "  Engineering Club  " });
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ name: "Engineering Club", available: true });
@@ -102,7 +102,7 @@ describe("organization routes", () => {
       available: false,
     });
     const response = await request(createApp(createAppConfig))
-      .post("/internal/organizations/name-availability")
+      .post("/organizations/name-availability")
       .send({ name: "Engineering Club" });
     expect(response.body).toEqual({
       name: "Engineering Club",
@@ -114,7 +114,7 @@ describe("organization routes", () => {
   it("rejects an invalid organization name without invoking the service", async () => {
     const app = createApp(createAppConfig);
     const response = await request(app)
-      .post("/internal/organizations/name-availability")
+      .post("/organizations/name-availability")
       .send({ name: " " });
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ message: API_MESSAGE.INVALID_INPUT });
@@ -126,7 +126,7 @@ describe("organization routes", () => {
       new HttpError("email is already registered in Supabase", 409),
     );
     const app = createApp(createAppConfig);
-    const response = await request(app).post("/internal/organizations").send(input);
+    const response = await request(app).post("/organizations").send(input);
     expect(response.status).toBe(409);
     expect(response.body).toEqual({ message: API_MESSAGE.CONFLICT });
   });
@@ -134,7 +134,7 @@ describe("organization routes", () => {
   it("does not expose internal details when organization creation fails", async () => {
     organizationService.createOrganization.mockRejectedValue(new Error("database unavailable"));
     const app = createApp(createAppConfig);
-    const response = await request(app).post("/internal/organizations").send(input);
+    const response = await request(app).post("/organizations").send(input);
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ message: API_MESSAGE.INTERNAL_SERVER_ERROR });
   });
@@ -154,9 +154,7 @@ describe("organization routes", () => {
     organizationService.createOrganization.mockRejectedValue(
       new HttpError("private provider details", status as number),
     );
-    const response = await request(createApp(createAppConfig))
-      .post("/internal/organizations")
-      .send(input);
+    const response = await request(createApp(createAppConfig)).post("/organizations").send(input);
     expect(response.status).toBe(status);
     expect(response.body).toEqual({ message });
   });
@@ -174,7 +172,7 @@ describe("organization routes", () => {
     };
     organizationService.createOrganization.mockResolvedValue(result);
     const app = createApp(createAppConfig);
-    const response = await request(app).post("/internal/organizations").send(input);
+    const response = await request(app).post("/organizations").send(input);
     expect(response.status).toBe(201);
     expect(response.body).toEqual(result);
     expect(organizationService.createOrganization).toHaveBeenCalledWith(input);
@@ -183,7 +181,7 @@ describe("organization routes", () => {
   it("returns JSON for malformed request bodies", async () => {
     const app = createApp(createAppConfig);
     const response = await request(app)
-      .post("/internal/organizations/name-availability")
+      .post("/organizations/name-availability")
       .set("Content-Type", "application/json")
       .send("{");
     expect(response.status).toBe(400);
@@ -193,7 +191,7 @@ describe("organization routes", () => {
   it("returns JSON when a request body exceeds the configured limit", async () => {
     const app = createApp(createAppConfig);
     const response = await request(app)
-      .post("/internal/organizations")
+      .post("/organizations")
       .send({ name: "a".repeat(102401) });
     expect(response.status).toBe(413);
     expect(response.body).toEqual({ message: API_MESSAGE.PAYLOAD_TOO_LARGE });
@@ -202,7 +200,7 @@ describe("organization routes", () => {
   it("returns JSON when request encoding is unsupported", async () => {
     const app = createApp(createAppConfig);
     const response = await request(app)
-      .post("/internal/organizations/name-availability")
+      .post("/organizations/name-availability")
       .set("Content-Type", "application/json")
       .set("Content-Encoding", "gzip")
       .send('{"name":"Engineering Club"}');

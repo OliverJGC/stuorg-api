@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { HttpError } from "../../types/httpError.js";
-import type { AuthSession, Membership, ProviderSession, SessionUser } from "../../types/auth.js";
+import type { AuthSession, Membership, ProviderSession, SessionUser } from "./types.js";
 import { getLogger } from "../../infrastructure/logging/logger.js";
 
 export function createAuthService(database: PrismaClient, baseUrl: string, apiKey: string) {
@@ -27,6 +27,13 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
     });
 
     if (!response.ok) {
+      getLogger().warn(
+        {
+          operation: "sessionRequest",
+          status: response.status >= 500 ? 503 : response.status === 429 ? 429 : 401,
+        },
+        "[authService] Auth provider rejected session request",
+      );
       throw new HttpError(
         "Authentication failed",
         response.status >= 500 ? 503 : response.status === 429 ? 429 : 401,
@@ -45,6 +52,10 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
         throw new Error();
       }
     } catch {
+      getLogger().error(
+        { operation: "sessionRequest", status: 503 },
+        "[authService] Auth provider returned an invalid session",
+      );
       throw new HttpError("Invalid auth service response", 503);
     }
 
@@ -62,10 +73,18 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
     });
 
     if (response.status === 401 || response.status === 403) {
+      getLogger().info(
+        { operation: "getUser", status: 401 },
+        "[authService] Access token rejected",
+      );
       return null;
     }
 
     if (!response.ok) {
+      getLogger().error(
+        { operation: "getUser", status: 503 },
+        "[authService] Auth provider user lookup failed",
+      );
       throw new HttpError("Auth service unavailable", 503);
     }
 
@@ -74,10 +93,18 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
     try {
       user = (await response.json()) as { id?: unknown };
     } catch {
+      getLogger().error(
+        { operation: "getUser", status: 503 },
+        "[authService] Auth provider returned invalid user data",
+      );
       throw new HttpError("Invalid auth service response", 503);
     }
 
     if (typeof user.id !== "string" || !user.id) {
+      getLogger().error(
+        { operation: "getUser", status: 503 },
+        "[authService] Auth provider returned invalid user data",
+      );
       throw new HttpError("Invalid auth service response", 503);
     }
 
@@ -106,6 +133,7 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
       }
 
       if (!userId) {
+        getLogger().warn({ operation: "restore", status: 401 }, "[authService] Session expired");
         throw new HttpError("Session expired", 401);
       }
 
@@ -132,6 +160,7 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
         isAdmin: row.isAdmin,
       }));
 
+      getLogger().info({ operation: "restore" }, "[authService] Restored session and memberships");
       return { user, memberships, refreshedSession };
     },
 
@@ -163,8 +192,14 @@ export function createAuthService(database: PrismaClient, baseUrl: string, apiKe
       });
 
       if (!response.ok && response.status !== 401 && response.status !== 403) {
+        getLogger().error(
+          { operation: "signOut", status: 503 },
+          "[authService] Auth provider logout failed",
+        );
         throw new HttpError("Auth service unavailable", 503);
       }
+
+      getLogger().info({ operation: "signOut" }, "[authService] Signed out session");
     },
   };
 }

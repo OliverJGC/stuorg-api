@@ -120,3 +120,34 @@ describe("auth routes", () => {
     expect(response.headers["set-cookie"].join(" ")).toContain("Expires=Thu, 01 Jan 1970");
   });
 });
+
+test("rejects invalid sign-in input", async () => {
+  const response = await request(app).post("/auth/sign-in").set("Origin", origin).send({});
+  expect(response.status).toBe(400);
+  expect(service.signIn).not.toHaveBeenCalled();
+});
+
+test.each([401, 503])("handles sign-out failure %i", async (status) => {
+  service.signOut.mockRejectedValueOnce(new HttpError("private", status));
+  const response = await request(app).post("/auth/sign-out").set("Origin", origin);
+  expect(response.status).toBe(status);
+  expect(Boolean(response.headers["set-cookie"])).toBe(status === 401);
+});
+
+test("clears cookies when session restoration fails with 401", async () => {
+  service.restore.mockRejectedValueOnce(new HttpError("expired", 401));
+  const response = await request(app)
+    .get("/auth/session")
+    .set("Origin", origin)
+    .set("Cookie", "stuorg_access=old");
+  expect(response.status).toBe(401);
+  expect(response.headers["set-cookie"]).toBeDefined();
+});
+
+test("ignores malformed cookie encoding", async () => {
+  const response = await request(app)
+    .get("/auth/session")
+    .set("Origin", origin)
+    .set("Cookie", "stuorg_access=%ZZ");
+  expect(response.status).toBe(401);
+});
